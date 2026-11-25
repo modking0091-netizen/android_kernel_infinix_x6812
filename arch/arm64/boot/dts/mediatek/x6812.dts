@@ -1,0 +1,264 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device Tree for Infinix Note 10 (X6812 / H6912)
+ * Derived from live X6812 FDT and MediaTek MT6768 base.
+ */
+
+#include "mt6768.dts"
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/mt6768-pinfunc.h>
+
+&chosen {
+	atag,videolfb-fb_base_l = <0x7e605000>;
+	atag,videolfb-fb_base_h = <0x0>;
+	atag,videolfb-islcmfound = <1>;
+	atag,videolfb-islcm_inited = <0>;
+	atag,videolfb-fps = <6000>;
+	atag,videolfb-vramSize = <0x017e8000>;
+	atag,videolfb-lcmname = "nt36672c_fhdp_dsi_vdo_60hz_wo_dsc_shenchao_lcm_drv";
+};
+
+&reserved_memory {
+	reserve-memory-scp_share {
+		compatible = "mediatek,reserve-memory-scp_share";
+		no-map;
+		size = <0 0x00d00000>;
+		alignment = <0 0x1000000>;
+		alloc-ranges = <0 0x40000000 0 0x50000000>;
+	};
+};
+
+/* Disable unused MT6370 sub-PMIC from mt6768.dts */
+&mt6370_pmu {
+	status = "disabled";
+};
+
+/* Move RT9471 from i2c7 (selene/mt6768 default) to i2c5 (X6812) */
+&i2c7 {
+	/delete-node/ rt-swchg@53;
+
+	speaker_amp@34 {
+		compatible = "mediatek,speaker_amp";
+		#sound-dai-cells = <0>;
+		reg = <0x34>;
+		status = "okay";
+	};
+};
+
+&i2c5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	rt-swchg@53 {
+		compatible = "richtek,swchg";
+		reg = <0x53>;
+		status = "okay";
+		rt,intr_gpio_num = <9>;
+		rt,intr_gpio = <&pio 9 0x0>;
+		led_ctl_gpio = <&pio 165 0x0>;
+		hvdcp20_dp_gpio = <&pio 150 0x0>;
+		tc30_dm_gpio = <&pio 179 0x0>;
+
+		rt9471 {
+			chg_name = "primary_chg";
+			chg_alias_name = "rt9471_chg";
+			rm-dev-addr = /bits/ 8 <0x53>;
+			rm-name = "rt9471";
+			interrupt-names = "wdt", "chg_mivr", "vac_ov",
+					  "otg_fault", "chg_rdy", "chg_done",
+					  "aicc_done", "pe_done", "chg_tout",
+					  "ieoc", "rechg", "chg_batov";
+			vac_ovp = <14000000>;
+			mivr = <4400000>;
+			aicr = <500000>;
+			cv = <4400000>;
+			ichg = <1500000>;
+			ieoc = <200000>;
+			safe_tmr = <10>;
+			wdt = <40>;
+			mivr_track = <0>;
+			en_safe_tmr;
+			en_te;
+			en_qon_rst;
+		};
+	};
+};
+
+&i2c6 {
+	i2c_lcd_bias@3e {
+		compatible = "mediatek,i2c_lcd_bias";
+		reg = <0x3e>;
+		status = "okay";
+	};
+
+	strobe_main@63 {
+		compatible = "mediatek,strobe_main";
+		reg = <0x63>;
+		status = "okay";
+	};
+};
+
+&i2c3 {
+	nfc@08 {
+		compatible = "mediatek,nfc";
+		reg = <0x8>;
+		status = "okay";
+	};
+};
+
+/* Display (NT36672C 60Hz Shenchao + Bias ENP/ENN) */
+&pio {
+	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp1_gpio: lcd_bias_enp1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0_gpio: lcd_bias_enp0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn1_gpio: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0_gpio: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	ctp_pins_default: eint0default {
+	};
+
+	ctp_pins_eint_as_int: eint@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	ctp_pins_eint_output0: eintoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	ctp_pins_eint_output1: eintoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO1__FUNC_GPIO1>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	ctp_pins_rst_output0: rstoutput0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	ctp_pins_rst_output1: rstoutput1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&mtkfb {
+	pinctrl-names = "lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+			"mode_te_te", "lcd_bias_enp1_gpio",
+			"lcd_bias_enp0_gpio", "lcd_bias_enn1_gpio",
+			"lcd_bias_enn0_gpio";
+	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	pinctrl-3 = <&mtkfb_pins_lcd_bias_enp1_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0_gpio>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enn1_gpio>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn0_gpio>;
+	status = "okay";
+};
+
+/* Touchscreen (Novatek NT36672C SPI on spi2) */
+&touch {
+	tpd-resolution = <1080 2460>;
+	use-tpd-button = <0>;
+	tpd-key-num = <3>;
+	tpd-key-local = <139 172 158 0>;
+	tpd-key-dim-local = <90 883 100 40 230 883 100 40 370 883 100 40 0 0 0 0>;
+	tpd-max-touch-num = <10>;
+	tpd-filter-enable = <0>;
+	tpd-filter-pixel-density = <168>;
+	pinctrl-names = "default", "state_eint_as_int",
+			"state_eint_output0", "state_eint_output1",
+			"state_rst_output0", "state_rst_output1";
+	pinctrl-0 = <&ctp_pins_default>;
+	pinctrl-1 = <&ctp_pins_eint_as_int>;
+	pinctrl-2 = <&ctp_pins_eint_output0>;
+	pinctrl-3 = <&ctp_pins_eint_output1>;
+	pinctrl-4 = <&ctp_pins_rst_output0>;
+	pinctrl-5 = <&ctp_pins_rst_output1>;
+	interrupt-parent = <&pio>;
+	interrupts = <1 IRQ_TYPE_EDGE_FALLING 1 0>;
+	vtouch-supply = <&mt_pmic_vtp_ldo_reg>;
+	status = "okay";
+};
+
+&spi2 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	touch@0 {
+		compatible = "novatek,NVT-ts-spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		novatek,irq-gpio = <&pio 1 0>;
+		novatek,reset-gpio = <&pio 0 0>;
+		novatek,swrst-n8-addr = <0x3f0fe>;
+		novatek,spi-rd-fast-addr = <0x3f310>;
+		status = "okay";
+	};
+};
