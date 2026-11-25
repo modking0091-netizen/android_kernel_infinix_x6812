@@ -565,7 +565,11 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		//charger_dev_get_charger_type(primary_charger, &type);
+		#ifdef CONFIG_CHARGER_BQ2589X_CHARGER
 		type = get_charger_type();
+#else
+		type = mt_get_charger_type();
+#endif
 		pr_err("ljj charger_dev_get_charger_type = %d\n",type);
 		if (type > 9 || type < 0)
 			type = 0;
