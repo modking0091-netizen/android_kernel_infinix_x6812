@@ -1,0 +1,90 @@
+name: Build Infinix X6812 Kernel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      defconfig:
+        description: 'Kernel defconfig to build'
+        required: false
+        default: 'x6812_defconfig'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache curl flex git \
+            libelf-dev libssl-dev python2 python3 python-is-python3 \
+            zip unzip wget lz4 device-tree-compiler \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
+      - name: Cache AOSP Clang 11 (r383902)
+        id: cache-clang
+        uses: actions/cache@v4
+        with:
+          path: ~/clang-r383902
+          key: clang-r383902-v1
+
+      - name: Download AOSP Clang 11 (r383902)
+        if: steps.cache-clang.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/clang-r383902
+          curl -LSs "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android11-release/clang-r383902.tar.gz" -o clang.tar.gz
+          tar -xzf clang.tar.gz -C ~/clang-r383902
+          rm -f clang.tar.gz
+
+      - name: Build Kernel
+        run: |
+          export PATH="$HOME/clang-r383902/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          DEFCONFIG="${{ github.event.inputs.defconfig || 'x6812_defconfig' }}"
+          echo "Building defconfig: $DEFCONFIG"
+
+          MAKE_ARGS=(
+            O=out
+            ARCH=arm64
+            CC=clang
+            CLANG_TRIPLE=aarch64-linux-gnu-
+            CROSS_COMPILE=aarch64-linux-gnu-
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+            LD=ld.lld
+            AR=llvm-ar
+            NM=llvm-nm
+            OBJCOPY=llvm-objcopy
+            OBJDUMP=llvm-objdump
+            STRIP=llvm-strip
+          )
+
+          make -j$(nproc) "${MAKE_ARGS[@]}" "$DEFCONFIG"
+          make -j$(nproc) "${MAKE_ARGS[@]}"
+
+      - name: Collect Build Artifacts
+        if: always()
+        run: |
+          mkdir -p artifacts
+          cp -f out/arch/arm64/boot/Image.gz-dtb artifacts/ 2>/dev/null || true
+          cp -f out/arch/arm64/boot/Image.gz artifacts/ 2>/dev/null || true
+          cp -f out/arch/arm64/boot/Image artifacts/ 2>/dev/null || true
+          cp -f out/arch/arm64/boot/dtbo.img artifacts/ 2>/dev/null || true
+          cp -f out/arch/arm64/boot/dts/mediatek/*.dtb artifacts/ 2>/dev/null || true
+          cp -f out/.config artifacts/config.txt 2>/dev/null || true
+          ls -lh artifacts/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: x6812-kernel-${{ github.sha }}
+          path: artifacts/
+          retention-days: 14
