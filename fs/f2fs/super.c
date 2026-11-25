@@ -139,6 +139,7 @@ enum {
 	Opt_fsync,
 	Opt_test_dummy_encryption,
 	Opt_inlinecrypt,
+	Opt_tran_gc,
 	Opt_checkpoint_disable,
 	Opt_checkpoint_disable_cap,
 	Opt_checkpoint_disable_cap_perc,
@@ -208,6 +209,7 @@ static match_table_t f2fs_tokens = {
 	{Opt_test_dummy_encryption, "test_dummy_encryption=%s"},
 	{Opt_test_dummy_encryption, "test_dummy_encryption"},
 	{Opt_inlinecrypt, "inlinecrypt"},
+	{Opt_tran_gc, "tran_gc"},
 	{Opt_checkpoint_disable, "checkpoint=disable"},
 	{Opt_checkpoint_disable_cap, "checkpoint=disable:%u"},
 	{Opt_checkpoint_disable_cap_perc, "checkpoint=disable:%u%%"},
@@ -845,6 +847,9 @@ static int parse_options(struct super_block *sb, char *options, bool is_remount)
 #else
 			f2fs_info(sbi, "inline encryption not supported");
 #endif
+			break;
+		case Opt_tran_gc:
+			/* Accept Transsion fstab tran_gc mount flag */
 			break;
 		case Opt_checkpoint_disable_cap_perc:
 			if (args->from && match_int(args, &arg))
