@@ -83,7 +83,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #include "lcm_i2c.h"
 
 #define FRAME_WIDTH			(1080)
-#define FRAME_HEIGHT			(2400)
+#define FRAME_HEIGHT			(2460)
 
 /* physical size in um */
 #define LCM_PHYSICAL_WIDTH		(64500)
@@ -104,7 +104,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #define FALSE 0
 #endif
 
-#define DSC_ENABLE
+/* #define DSC_ENABLE */
 
 /* i2c control start */
 
