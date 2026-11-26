@@ -98,9 +98,11 @@ static int tee_open(struct inode *inode, struct file *filp)
 	struct tee_context *ctx;
 
 	ctx = teedev_open(container_of(inode->i_cdev, struct tee_device, cdev));
-	if (IS_ERR(ctx))
+	if (IS_ERR(ctx)) {
+		pr_err("isee_tee: tee_open failed pid=%d err=%ld\n", current->pid, PTR_ERR(ctx));
 		return PTR_ERR(ctx);
-
+	}
+	pr_err("isee_tee: tee_open ok pid=%d comm=%s\n", current->pid, current->comm);
 	filp->private_data = ctx;
 	return 0;
 }
@@ -676,35 +678,51 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct tee_context *ctx = filp->private_data;
 	void __user *uarg = (void __user *)arg;
+	long ret;
 
 	switch (cmd) {
 	case TEE_IOC_VERSION:
-		return tee_ioctl_version(ctx, uarg);
+		ret = tee_ioctl_version(ctx, uarg);
+		break;
 	case TEE_IOC_SHM_ALLOC:
-		return tee_ioctl_shm_alloc(ctx, uarg);
+		ret = tee_ioctl_shm_alloc(ctx, uarg);
+		break;
 #ifdef CONFIG_MICROTRUST_TEST_DRIVERS
 	case TEE_IOC_SHM_KERN_OP:
-		return tee_ioctl_shm_kern_op(ctx, uarg);
+		ret = tee_ioctl_shm_kern_op(ctx, uarg);
+		break;
 	case TEE_IOC_CAPI_PROXY:
-		return tee_ioctl_capi_proxy(ctx, uarg);
+		ret = tee_ioctl_capi_proxy(ctx, uarg);
+		break;
 #endif
 	case TEE_IOC_OPEN_SESSION:
-		return tee_ioctl_open_session(ctx, uarg);
+		ret = tee_ioctl_open_session(ctx, uarg);
+		break;
 	case TEE_IOC_INVOKE:
-		return tee_ioctl_invoke(ctx, uarg);
+		ret = tee_ioctl_invoke(ctx, uarg);
+		break;
 	case TEE_IOC_CANCEL:
-		return tee_ioctl_cancel(ctx, uarg);
+		ret = tee_ioctl_cancel(ctx, uarg);
+		break;
 	case TEE_IOC_CLOSE_SESSION:
-		return tee_ioctl_close_session(ctx, uarg);
+		ret = tee_ioctl_close_session(ctx, uarg);
+		break;
 	case TEE_IOC_SUPPL_RECV:
-		return tee_ioctl_supp_recv(ctx, uarg);
+		ret = tee_ioctl_supp_recv(ctx, uarg);
+		break;
 	case TEE_IOC_SUPPL_SEND:
-		return tee_ioctl_supp_send(ctx, uarg);
+		ret = tee_ioctl_supp_send(ctx, uarg);
+		break;
 	case TEE_IOC_SET_HOSTNAME:
-		return tee_ioctl_set_hostname(ctx, uarg);
+		ret = tee_ioctl_set_hostname(ctx, uarg);
+		break;
 	default:
-		return -EINVAL;
+		ret = -EINVAL;
+		break;
 	}
+	if (ret < 0)
+		pr_err("isee_tee: ioctl cmd=0x%x pid=%d comm=%s ret=%ld\n", cmd, current->pid, current->comm, ret);
+	return ret;
 }
 
 static const struct file_operations tee_fops = {
