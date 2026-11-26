@@ -341,7 +341,11 @@ int do_esd_check_eint(void)
 #endif
 /* Huaqin add for HQ-124138 by dongtingchi at 2021/04/29 end */
 /* Huaqin modify for HQ-144782 by caogaojie at 2021/07/05 start */
+#ifdef CONFIG_MI_ERRFLAG_ESD_CHECK_ENABLE
 	return ret || g_trigger_disp_esd_recovery;
+#else
+	return ret;
+#endif
 /* Huaqin modify for HQ-144782 by caogaojie at 2021/07/05 end */
 }
 
