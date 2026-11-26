@@ -1052,6 +1052,7 @@ void primary_display_check_recovery_init(void)
 		kthread_create(primary_display_check_recovery_worker_kthread,
 			       NULL, "disp_check");
 	init_waitqueue_head(&_check_task_wq);
+	init_waitqueue_head(&esd_ext_te_wq);
 
 	if (disp_helper_get_option(DISP_OPT_ESD_CHECK_RECOVERY)) {
 		wake_up_process(primary_display_check_task);
