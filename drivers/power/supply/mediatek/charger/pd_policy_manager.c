@@ -1094,11 +1094,15 @@ static int __init usbpd_pm_init(void)
 	struct usbpd_pm *pdpm;
 	int ret = 0;
 
+#ifdef CONFIG_TCPC_CLASS
     if(!get_pd_status())
     {
          pr_err("usbpd_pm_init get pd1 err --> no pd!\n");
          return -1;
     }
+#else
+    return -1;
+#endif
 	pr_err("wq:%s start",__func__);
 	pdpm = kzalloc(sizeof(*pdpm), GFP_KERNEL);
 	if (!pdpm)
