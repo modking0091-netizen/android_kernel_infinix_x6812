@@ -68,9 +68,9 @@
 #if (CONFIG_MICROTRUST_TZ_DRIVER_MTK_BOOTPROF && CONFIG_MTPROF)
 
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
-#define TEEI_BOOT_FOOTPRINT(str) do { pr_err("TEEI_BP: %s\n", str); bootprof_log_boot(str); } while (0)
+#define TEEI_BOOT_FOOTPRINT(str) bootprof_log_boot(str)
 #else
-#define TEEI_BOOT_FOOTPRINT(str) log_boot(str)
+#define TEEI_BOOT_FOOTPRINT(str) do { pr_err("TEEI_BP: %s\n", str); log_boot(str); } while (0)
 #endif
 
 #else
