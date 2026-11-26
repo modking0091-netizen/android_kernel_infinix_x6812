@@ -2614,6 +2614,18 @@ static int __parse_tag_videolfb_extra(struct device_node *node)
 	memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
 	strncpy((char *)mtkfb_lcm_name, prop, sizeof(mtkfb_lcm_name));
 	mtkfb_lcm_name[size] = '\0';
+	/* X6812: atag,videolfb-vramSize (25MB) is smaller than 3-page FB+DAL (37.4MB);
+	 * atag,videolfb holds the full reserved 0x7d830000 + 0x023d0000 region.
+	 */
+	if (vramsize < 0x023d0000) {
+		const u32 *raw = of_get_property(node, "atag,videolfb", NULL);
+		if (raw && le32_to_cpu(raw[5]) >= 0x023d0000) {
+			fb_base = ((u64)le32_to_cpu(raw[1]) << 32) | le32_to_cpu(raw[0]);
+			vramsize = le32_to_cpu(raw[5]);
+			pr_err("mtkfb: using full reserved FB 0x%llx size 0x%x\n",
+			       (unsigned long long)fb_base, vramsize);
+		}
+	}
 	DISPMSG("%s done\n", __func__);
 	return 0;
 }
@@ -2974,10 +2986,15 @@ static int mtkfb_probe(struct platform_device *pdev)
 		unsigned long fbPA = fb_pa;
 
 		/* / DAL init here */
-		fbVA += DISP_GetFBRamSize();
-		fbPA += DISP_GetFBRamSize();
-		ret = DAL_Init(fbVA, fbPA);
-		DISPMSG("DAL_Init done\n");
+		if (DISP_GetFBRamSize() + (MTK_FB_XRES * MTK_FB_YRES * 2) <= vramsize) {
+			fbVA += DISP_GetFBRamSize();
+			fbPA += DISP_GetFBRamSize();
+			ret = DAL_Init(fbVA, fbPA);
+			DISPMSG("DAL_Init done\n");
+		} else {
+			pr_err("mtkfb: skip DAL_Init fb=%u vram=%u\n",
+			       DISP_GetFBRamSize(), vramsize);
+		}
 	}
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
