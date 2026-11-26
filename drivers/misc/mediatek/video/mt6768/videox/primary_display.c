@@ -1322,15 +1322,15 @@ int primary_display_get_debug_state(char *stringbuf, int buf_len)
 	int len = 0;
 	struct LCM_PARAMS *lcm_param;
 	struct LCM_DRIVER *lcm_drv;
+#ifdef CONFIG_MTK_HIGH_FRAME_RATE
+	int active_cfg = 0;
+#endif
 
 	if (!pgc->plcm || !pgc->plcm->drv)
 		return scnprintf(stringbuf, buf_len, "primary_display: plcm is NULL\n");
 
 	lcm_param = disp_lcm_get_params(pgc->plcm);
 	lcm_drv = pgc->plcm->drv;
-#ifdef CONFIG_MTK_HIGH_FRAME_RATE
-	int active_cfg = 0;
-#endif
 
 	if (len > buf_len) {
 		DISPERR("%s, buffer is too small", __func__);
