@@ -87,10 +87,10 @@ static atomic_t esd_ext_te_event = ATOMIC_INIT(0);
 #ifdef CONFIG_MI_ERRFLAG_ESD_CHECK_ENABLE
 atomic_t lcm_ready = ATOMIC_INIT(0);
 atomic_t lcm_valid_irq = ATOMIC_INIT(0);
+#endif
 /* Huaqin modify for HQ-144782 by caogaojie at 2021/07/05 start */
 bool g_trigger_disp_esd_recovery;
 /* Huaqin modify for HQ-144782 by caogaojie at 2021/07/05 end */
-#endif
 /* Huaqin add for HQ-124138 by dongtingchi at 2021/04/29 end */
 
 static unsigned int esd_check_mode;
