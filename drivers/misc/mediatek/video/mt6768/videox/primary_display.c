@@ -1906,6 +1906,10 @@ void _cmdq_stop_trigger_loop(void)
 	/* this should be called only once because
 	 * trigger loop will never stop
 	 */
+	if (!pgc->cmdq_handle_trigger) {
+		DISPINFO("%s: trigger handle is NULL, skip\n", __func__);
+		return;
+	}
 	ret = cmdqRecStopLoop(pgc->cmdq_handle_trigger);
 	if (ret < 0)
 		DISPERR("%s cmdq stop loop fail\n", __func__);
