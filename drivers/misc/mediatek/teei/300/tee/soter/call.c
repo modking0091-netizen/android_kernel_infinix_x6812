@@ -272,8 +272,11 @@ int soter_open_session(struct tee_context *ctx,
 	}
 
 	if (soter_do_call_with_arg(ctx, msg_parg)) {
+		pr_err("isee_tee: soter_open_session soter_do_call_with_arg failed\n");
 		msg_arg->ret = TEEC_ERROR_COMMUNICATION;
 		msg_arg->ret_origin = TEEC_ORIGIN_COMMS;
+	} else if (msg_arg->ret != TEEC_SUCCESS) {
+		pr_err("isee_tee: soter_open_session ret=0x%x origin=0x%x\n", msg_arg->ret, msg_arg->ret_origin);
 	}
 
 	if (msg_arg->ret == TEEC_SUCCESS) {
