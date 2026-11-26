@@ -104,7 +104,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #define FALSE 0
 #endif
 
-#define DSC_ENABLE
+// #define DSC_ENABLE
 
 /* i2c control start */
 
@@ -500,13 +500,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 10;
 	params->dsi.vertical_backporch = 22;
-	params->dsi.vertical_frontporch = 800;
+	params->dsi.vertical_frontporch = 54;
 	//params->dsi.vertical_frontporch_for_low_power = 750;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 22;
-	params->dsi.horizontal_backporch = 22;
-	params->dsi.horizontal_frontporch = 165;
+	params->dsi.horizontal_sync_active = 16;
+	params->dsi.horizontal_backporch = 40;
+	params->dsi.horizontal_frontporch = 40;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 	params->dsi.bdg_ssc_disable = 1;
@@ -519,7 +519,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 //	params->dsi.PLL_CLOCK = 300; //with dsc
 #else
 	params->dsi.bdg_dsc_enable = 0;
-	params->dsi.PLL_CLOCK = 500; //without dsc
+	params->dsi.PLL_CLOCK = 550; //without dsc
 #endif
 	params->dsi.PLL_CK_CMD = 480;
 #else
