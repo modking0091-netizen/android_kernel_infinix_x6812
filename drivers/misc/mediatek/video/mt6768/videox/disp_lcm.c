@@ -1049,6 +1049,8 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 	struct disp_lcm_handle *plcm = NULL;
 
 	DISPFUNC();
+	pr_err("disp_lcm_probe: plcm_name='%s' is_lcm_inited=%d count=%d\n",
+	       plcm_name ? plcm_name : "NULL", is_lcm_inited, _lcm_count());
 	DISPCHECK("plcm_name=%s is_lcm_inited %d\n", plcm_name, is_lcm_inited);
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
@@ -1088,10 +1090,9 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 		} else {
 			lcm_drv = lcm_driver_list[0];
 			if (strcmp(lcm_drv->name, plcm_name)) {
-				DISPERR(
-					"FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
-				    lcm_drv->name, plcm_name);
-				return NULL;
+				pr_err(
+					"disp_lcm_probe: kernel(%s) != LK(%s), forcing lcm_driver_list[0]\n",
+					lcm_drv->name, plcm_name);
 			}
 
 			isLCMInited = true;
