@@ -42,9 +42,10 @@ static inline int soter_do_call_with_arg(struct tee_context *ctx,
 		return teei_forward_call(NQ_CMD_GPTEE_CLIENT_API_REQUEST, parg,
 						sizeof(struct optee_msg_arg));
 
-	IMSG_ERROR("Unrecognized hostname: '%s'\n", ctx->hostname);
-
-	return -EINVAL;
+	/* X6812: Beanpod libTEECommon may not set hostname; default to bta_loader */
+	pr_err("isee_tee: soter_do_call hostname='%s' defaulting to bta_loader\n", ctx->hostname);
+	return teei_forward_call(NQ_CMD_CLIENT_API_REQUEST, parg,
+					sizeof(struct optee_msg_arg));
 }
 
 static inline int soter_register_shm_pool(phys_addr_t shm_pa, int shm_size)
