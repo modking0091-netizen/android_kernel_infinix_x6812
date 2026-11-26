@@ -272,11 +272,12 @@ int soter_open_session(struct tee_context *ctx,
 	}
 
 	if (soter_do_call_with_arg(ctx, msg_parg)) {
-		pr_err("isee_tee: soter_open_session soter_do_call_with_arg failed\n");
+		pr_err("isee_tee: open_session forward_call failed\n");
 		msg_arg->ret = TEEC_ERROR_COMMUNICATION;
 		msg_arg->ret_origin = TEEC_ORIGIN_COMMS;
-	} else if (msg_arg->ret != TEEC_SUCCESS) {
-		pr_err("isee_tee: soter_open_session ret=0x%x origin=0x%x\n", msg_arg->ret, msg_arg->ret_origin);
+	} else {
+		pr_err("isee_tee: open_session ret=0x%x origin=0x%x sess=%u\n",
+			msg_arg->ret, msg_arg->ret_origin, msg_arg->session);
 	}
 
 	if (msg_arg->ret == TEEC_SUCCESS) {
@@ -414,6 +415,9 @@ int soter_invoke_func(struct tee_context *ctx, struct tee_ioctl_invoke_arg *arg,
 
 	arg->ret = msg_arg->ret;
 	arg->ret_origin = msg_arg->ret_origin;
+	if (strncmp(current->comm, "android.hard", 12) == 0)
+		pr_err("isee_tee: invoke func=0x%x ret=0x%x origin=0x%x\n",
+			arg->func, arg->ret, arg->ret_origin);
 out:
 	isee_shm_free(shm);
 	return rc;
