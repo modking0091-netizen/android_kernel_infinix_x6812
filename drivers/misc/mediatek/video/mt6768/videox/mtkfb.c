@@ -2698,14 +2698,14 @@ static int _parse_tag_videolfb(void)
 		chosen_node = of_find_node_by_path("/chosen@0");
 
 	if (chosen_node) {
+		ret = __parse_tag_videolfb_extra(chosen_node);
+		if (!ret)
+			goto found;
 		ret = __parse_tag_videolfb(chosen_node);
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 		ret = __parse_tag_ext_videolfb(chosen_node);
 #endif
-		if (!ret)
-			goto found;
-		ret = __parse_tag_videolfb_extra(chosen_node);
 		if (!ret)
 			goto found;
 	} else {
