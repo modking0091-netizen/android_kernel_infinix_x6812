@@ -739,6 +739,7 @@ static long teei_config_ioctl(struct file *file,
 	struct init_param param;
 	unsigned int teei_ta_flags;
 
+	IMSG_ERROR("teei_config_ioctl cmd=0x%x (INIT=0x%lx UNLOCK=0x%lx)\n", cmd, (unsigned long)TEEI_CONFIG_IOCTL_INIT_TEEI, (unsigned long)TEEI_CONFIG_IOCTL_UNLOCK);
 	switch (cmd) {
 
 	case TEEI_CONFIG_IOCTL_INIT_TEEI:
@@ -811,6 +812,7 @@ err:
 
 static int teei_config_open(struct inode *inode, struct file *file)
 {
+	IMSG_ERROR("teei_config_open pid=%d\n", current->pid);
 	return 0;
 }
 
