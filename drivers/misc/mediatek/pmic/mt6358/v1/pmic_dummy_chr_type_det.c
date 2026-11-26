@@ -110,6 +110,9 @@ void __attribute__((weak)) mtk_pmic_enable_chr_type_det(bool en)
 {
 }
 
+extern void mt_usb_connect(void);
+extern void mt_usb_disconnect(void);
+
 void do_charger_detect(void)
 {
 	if (!mt_usb_is_device()) {
@@ -123,11 +126,15 @@ void do_charger_detect(void)
 	if (pmic_get_register_value(PMIC_RGS_CHRDET)) {
 		pr_info("charger type: charger IN\n");
 		g_chr_type = hw_charging_get_charger_type();
-		chrdet_inform_psy_changed(g_chr_type, 1);
+		if (chrdet_psy)
+			chrdet_inform_psy_changed(g_chr_type, 1);
+		mt_usb_connect();
 	} else {
 		pr_info("charger type: charger OUT\n");
 		g_chr_type = CHARGER_UNKNOWN;
-		chrdet_inform_psy_changed(g_chr_type, 0);
+		if (chrdet_psy)
+			chrdet_inform_psy_changed(g_chr_type, 0);
+		mt_usb_disconnect();
 	}
 
 	mutex_unlock(&chrdet_lock);
@@ -180,10 +187,8 @@ static int __init pmic_chrdet_init(void)
 {
 	mutex_init(&chrdet_lock);
 	chrdet_psy = power_supply_get_by_name("charger");
-	if (!chrdet_psy) {
-		pr_debug("%s: get power supply failed\n", __func__);
-		return -EINVAL;
-	}
+	if (!chrdet_psy)
+		pr_err("%s: get power supply failed (continuing for mt_usb_connect)\n", __func__);
 
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 	/* do charger detect here to prevent HW miss interrupt*/
