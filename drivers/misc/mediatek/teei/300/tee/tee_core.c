@@ -720,8 +720,9 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		ret = -EINVAL;
 		break;
 	}
-	if (ret < 0)
-		pr_err("isee_tee: ioctl cmd=0x%x pid=%d comm=%s ret=%ld\n", cmd, current->pid, current->comm, ret);
+	if (ret < 0 || strncmp(current->comm, "android.hard", 12) == 0)
+		pr_err("isee_tee: ioctl cmd=0x%x pid=%d comm=%s host=%s ret=%ld\n",
+			cmd, current->pid, current->comm, ctx->hostname, ret);
 	return ret;
 }
 
