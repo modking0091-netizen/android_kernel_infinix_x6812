@@ -18,6 +18,8 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/fs.h>
+#include <linux/mm.h>
+#include <linux/mutex.h>
 #include <linux/idr.h>
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -40,6 +42,15 @@
  */
 static DECLARE_BITMAP(dev_mask, TEE_NUM_DEVICES);
 static DEFINE_SPINLOCK(driver_lock);
+
+struct isee_mmap_shm {
+	struct list_head link;
+	struct tee_context *ctx;
+	unsigned long uaddr;
+	struct tee_shm *shm;
+};
+static LIST_HEAD(isee_mmap_list);
+static DEFINE_MUTEX(isee_mmap_lock);
 
 static struct class *tee_class;
 static dev_t tee_devt;
@@ -98,18 +109,67 @@ static int tee_open(struct inode *inode, struct file *filp)
 	struct tee_context *ctx;
 
 	ctx = teedev_open(container_of(inode->i_cdev, struct tee_device, cdev));
-	if (IS_ERR(ctx)) {
-		pr_err("isee_tee: tee_open failed pid=%d err=%ld\n", current->pid, PTR_ERR(ctx));
+	if (IS_ERR(ctx))
 		return PTR_ERR(ctx);
-	}
-	pr_err("isee_tee: tee_open ok pid=%d comm=%s\n", current->pid, current->comm);
+
 	filp->private_data = ctx;
 	return 0;
 }
 
 static int tee_release(struct inode *inode, struct file *filp)
 {
-	teedev_close_context(filp->private_data);
+	struct tee_context *ctx = filp->private_data;
+	struct isee_mmap_shm *entry, *tmp;
+
+	mutex_lock(&isee_mmap_lock);
+	list_for_each_entry_safe(entry, tmp, &isee_mmap_list, link) {
+		if (entry->ctx == ctx) {
+			list_del(&entry->link);
+			isee_shm_put(entry->shm);
+			kfree(entry);
+		}
+	}
+	mutex_unlock(&isee_mmap_lock);
+
+	teedev_close_context(ctx);
+	return 0;
+}
+
+static int tee_mmap(struct file *filp, struct vm_area_struct *vma)
+{
+	struct tee_context *ctx = filp->private_data;
+	size_t size = vma->vm_end - vma->vm_start;
+	struct tee_shm *shm;
+	struct isee_mmap_shm *entry;
+	int ret;
+
+	shm = isee_shm_alloc(ctx, size, TEE_SHM_MAPPED | TEE_SHM_DMA_BUF);
+	if (IS_ERR(shm)) {
+		pr_err("isee_tee: tee_mmap alloc size=%zu failed err=%ld\n", size, PTR_ERR(shm));
+		return PTR_ERR(shm);
+	}
+
+	ret = remap_pfn_range(vma, vma->vm_start, shm->paddr >> PAGE_SHIFT,
+			      size, vma->vm_page_prot);
+	if (ret) {
+		pr_err("isee_tee: tee_mmap remap_pfn_range failed ret=%d\n", ret);
+		isee_shm_free(shm);
+		return ret;
+	}
+
+	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
+	if (!entry) {
+		isee_shm_free(shm);
+		return -ENOMEM;
+	}
+	entry->ctx = ctx;
+	entry->uaddr = vma->vm_start;
+	entry->shm = shm;
+
+	mutex_lock(&isee_mmap_lock);
+	list_add_tail(&entry->link, &isee_mmap_list);
+	mutex_unlock(&isee_mmap_lock);
+
 	return 0;
 }
 
@@ -678,58 +738,77 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct tee_context *ctx = filp->private_data;
 	void __user *uarg = (void __user *)arg;
-	long ret;
 
 	switch (cmd) {
 	case TEE_IOC_VERSION:
-		ret = tee_ioctl_version(ctx, uarg);
-		break;
+		return tee_ioctl_version(ctx, uarg);
 	case TEE_IOC_SHM_ALLOC:
-		ret = tee_ioctl_shm_alloc(ctx, uarg);
-		break;
+		return tee_ioctl_shm_alloc(ctx, uarg);
 #ifdef CONFIG_MICROTRUST_TEST_DRIVERS
 	case TEE_IOC_SHM_KERN_OP:
-		ret = tee_ioctl_shm_kern_op(ctx, uarg);
-		break;
+		return tee_ioctl_shm_kern_op(ctx, uarg);
 	case TEE_IOC_CAPI_PROXY:
-		ret = tee_ioctl_capi_proxy(ctx, uarg);
-		break;
+		return tee_ioctl_capi_proxy(ctx, uarg);
 #endif
 	case TEE_IOC_OPEN_SESSION:
-		ret = tee_ioctl_open_session(ctx, uarg);
-		break;
+		return tee_ioctl_open_session(ctx, uarg);
 	case TEE_IOC_INVOKE:
-		ret = tee_ioctl_invoke(ctx, uarg);
-		break;
+		return tee_ioctl_invoke(ctx, uarg);
 	case TEE_IOC_CANCEL:
-		ret = tee_ioctl_cancel(ctx, uarg);
-		break;
+		return tee_ioctl_cancel(ctx, uarg);
 	case TEE_IOC_CLOSE_SESSION:
-		ret = tee_ioctl_close_session(ctx, uarg);
-		break;
+		return tee_ioctl_close_session(ctx, uarg);
 	case TEE_IOC_SUPPL_RECV:
-		ret = tee_ioctl_supp_recv(ctx, uarg);
-		break;
+		return tee_ioctl_supp_recv(ctx, uarg);
 	case TEE_IOC_SUPPL_SEND:
-		ret = tee_ioctl_supp_send(ctx, uarg);
-		break;
+		return tee_ioctl_supp_send(ctx, uarg);
 	case TEE_IOC_SET_HOSTNAME:
-		ret = tee_ioctl_set_hostname(ctx, uarg);
-		break;
-	default:
-		ret = -EINVAL;
-		break;
+		return tee_ioctl_set_hostname(ctx, uarg);
+	case 0x8010a40d: {
+		struct isee_mmap_shm *entry;
+		int id = -ENOENT;
+
+		mutex_lock(&isee_mmap_lock);
+		list_for_each_entry(entry, &isee_mmap_list, link) {
+			if (entry->ctx == ctx && entry->uaddr == arg) {
+				id = entry->shm->id;
+				break;
+			}
+		}
+		mutex_unlock(&isee_mmap_lock);
+		if (id < 0)
+			pr_err("isee_tee: ioctl 0x8010a40d uaddr=0x%lx not found\n", arg);
+		return id;
 	}
-	if (ret < 0 || strncmp(current->comm, "android.hard", 12) == 0)
-		pr_err("isee_tee: ioctl cmd=0x%x pid=%d comm=%s host=%s ret=%ld\n",
-			cmd, current->pid, current->comm, ctx->hostname, ret);
-	return ret;
+	case 0x8010a40c: {
+		struct isee_mmap_shm *entry, *tmp;
+		int ret = -ENOENT;
+
+		mutex_lock(&isee_mmap_lock);
+		list_for_each_entry_safe(entry, tmp, &isee_mmap_list, link) {
+			if (entry->ctx == ctx && entry->uaddr == arg) {
+				list_del(&entry->link);
+				isee_shm_put(entry->shm);
+				kfree(entry);
+				ret = 0;
+				break;
+			}
+		}
+		mutex_unlock(&isee_mmap_lock);
+		return ret;
+	}
+	default:
+		pr_err("isee_tee: unknown ioctl cmd=0x%x pid=%d comm=%s\n",
+		       cmd, current->pid, current->comm);
+		return -EINVAL;
+	}
 }
 
 static const struct file_operations tee_fops = {
 	.owner = THIS_MODULE,
 	.open = tee_open,
 	.release = tee_release,
+	.mmap = tee_mmap,
 	.unlocked_ioctl = tee_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = tee_ioctl,
