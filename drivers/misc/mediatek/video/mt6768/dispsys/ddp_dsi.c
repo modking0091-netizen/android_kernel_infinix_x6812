@@ -6374,6 +6374,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 
 	/* DSI_RestoreRegisters(module, NULL); */
 	DSI_exit_ULPS(module);
+	pr_info("ddp_dsi_power_on: DSI_STATE_DBG0=0x%x DSI_STATUS=0x%x\n", AS_UINT32(&DSI_REG[0]->DSI_STATE_DBG0), AS_UINT32(&DSI_REG[0]->DSI_STATUS));
 	if (bdg_is_bdg_connected() == 1)
 		check_stopstate(NULL);
 
