@@ -5732,6 +5732,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	mdelay(3);
 	spislv_init();
 	spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
+	pr_info("bdg_common_init: low_speed chip_id=0x%x\n", mtk_spi_read(0x0));
 
 	set_LDO_on(cmdq);
 	set_mtcmos_on(cmdq);
@@ -5739,6 +5740,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	set_subsys_on(cmdq);
 
 	spislv_switch_speed_hz(SPI_TX_MAX_SPEED_HZ, SPI_RX_MAX_SPEED_HZ);
+	pr_info("bdg_common_init: max_speed chip_id=0x%x\n", mtk_spi_read(0x0));
 	// Disable reset sequential de-glitch circuit
 	DSI_OUTREG32(cmdq, SYS_REG->RST_DG_CTRL, 0);
 	// Set GPIO to active IRQ
