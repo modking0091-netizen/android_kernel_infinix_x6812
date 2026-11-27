@@ -8,6 +8,8 @@
 
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
+#include <linux/of_gpio.h>
+#include <linux/delay.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 
@@ -191,6 +193,81 @@ static inline const char *safe_audio_pa_vendor(void)
 	return v ? v : "";
 }
 
+
+/* Transsion tran_audio,audio dual-PA GPIO pulse control */
+static bool tran_audio_inited;
+static int tran_extamp_gpio = -1;
+static int tran_dual_spk_gpio = -1;
+static int tran_amp_type_gpio = -1;
+static int tran_amp_type;
+static u32 tran_extamp_mode = 2;
+static u32 tran_fs_extamp_mode = 6;
+static u32 tran_rcv_mode = 6;
+static u32 tran_fs_rcv_mode = 3;
+
+static void tran_audio_dt_init(void)
+{
+	struct device_node *np;
+
+	if (tran_audio_inited)
+		return;
+	tran_audio_inited = true;
+
+	np = of_find_compatible_node(NULL, NULL, "tran_audio,audio");
+	if (!np) {
+		pr_err("tran_audio: DT node not found\n");
+		return;
+	}
+	tran_extamp_gpio = of_get_named_gpio(np, "extamp_gpio", 0);
+	tran_dual_spk_gpio = of_get_named_gpio(np, "dual_speaker_gpio", 0);
+	tran_amp_type_gpio = of_get_named_gpio(np, "amp_type_gpio", 0);
+	of_property_read_u32(np, "extamp_mode", &tran_extamp_mode);
+	of_property_read_u32(np, "fs_extamp_mode", &tran_fs_extamp_mode);
+	of_property_read_u32(np, "receiver_mode", &tran_rcv_mode);
+	of_property_read_u32(np, "fs_receiver_mode", &tran_fs_rcv_mode);
+	of_node_put(np);
+
+	if (gpio_is_valid(tran_amp_type_gpio)) {
+		if (gpio_request(tran_amp_type_gpio, "tran_amp_type") == 0) {
+			gpio_direction_input(tran_amp_type_gpio);
+			tran_amp_type = gpio_get_value(tran_amp_type_gpio) & 1;
+		}
+	}
+	if (gpio_is_valid(tran_extamp_gpio))
+		gpio_request(tran_extamp_gpio, "tran_extamp");
+	if (gpio_is_valid(tran_dual_spk_gpio))
+		gpio_request(tran_dual_spk_gpio, "tran_dual_spk");
+
+	pr_info("tran_audio: extamp=%d dual=%d type_gpio=%d type=%d modes=%u/%u/%u/%u\n",
+		tran_extamp_gpio, tran_dual_spk_gpio, tran_amp_type_gpio,
+		tran_amp_type, tran_extamp_mode, tran_fs_extamp_mode,
+		tran_rcv_mode, tran_fs_rcv_mode);
+}
+
+static void tran_ext_amp_pulse(int gpio, bool enable, u32 mode)
+{
+	u32 i;
+	unsigned long delay_us = tran_amp_type ? 10 : 2;
+
+	if (!gpio_is_valid(gpio))
+		return;
+	if (!enable) {
+		gpio_direction_output(gpio, 0);
+		udelay(500);
+		return;
+	}
+	if (tran_amp_type) {
+		gpio_direction_output(gpio, 1);
+		udelay(300);
+	}
+	for (i = 0; i < mode; i++) {
+		gpio_direction_output(gpio, 0);
+		udelay(delay_us);
+		gpio_direction_output(gpio, 1);
+		udelay(delay_us);
+	}
+}
+
 static int mt6768_mt6358_spk_amp_event(struct snd_soc_dapm_widget *w,
 					struct snd_kcontrol *kcontrol, int event)
 {
@@ -214,7 +291,12 @@ static int mt6768_mt6358_spk_amp_event(struct snd_soc_dapm_widget *w,
 			fsm_speaker_onn(FSM_SCENE_MUSIC);
 #endif
 		} else {
-			pr_err("Please check out start PA");
+			u32 mode;
+			tran_audio_dt_init();
+			mode = tran_amp_type ? tran_fs_extamp_mode : tran_extamp_mode;
+			tran_ext_amp_pulse(tran_extamp_gpio, true, mode);
+			tran_ext_amp_pulse(tran_dual_spk_gpio, true, mode);
+			msleep(40);
 		}
 /*K19A code for HQ-123483 by zhangpeng at 2021.3.22 end*/
 		break;
@@ -232,7 +314,9 @@ static int mt6768_mt6358_spk_amp_event(struct snd_soc_dapm_widget *w,
 			fsm_speaker_off();
 #endif
 		} else {
-			pr_err("Please check out off PA");
+			tran_audio_dt_init();
+			tran_ext_amp_pulse(tran_extamp_gpio, false, 0);
+			tran_ext_amp_pulse(tran_dual_spk_gpio, false, 0);
 		}
 /*K19A code for HQ-123483 by zhangpeng at 2021.3.22 end*/
 		break;
@@ -278,7 +362,14 @@ static int mt6768_mt6358_rcv_amp_event(struct snd_soc_dapm_widget *w,
 			};
 #endif
 		} else {
-			pr_err("Please check out off PA");
+			u32 mode;
+			tran_audio_dt_init();
+			if (rcv_amp_mode)
+				mode = tran_amp_type ? tran_fs_rcv_mode : tran_rcv_mode;
+			else
+				mode = tran_amp_type ? tran_fs_extamp_mode : tran_extamp_mode;
+			tran_ext_amp_pulse(tran_dual_spk_gpio, true, mode);
+			msleep(40);
 		}
 /*K19A code for WXYFB-1001 by zhangpeng at 2021.3.19 end*/
 		break;
@@ -296,7 +387,8 @@ static int mt6768_mt6358_rcv_amp_event(struct snd_soc_dapm_widget *w,
 			fsm_speaker_off();
 #endif
 		} else {
-			pr_err("Please check out off PA");
+			tran_audio_dt_init();
+			tran_ext_amp_pulse(tran_dual_spk_gpio, false, 0);
 		}
 /*K19A code for WXYFB-1001 by zhangpeng at 2021.3.19 end*/
 		break;
