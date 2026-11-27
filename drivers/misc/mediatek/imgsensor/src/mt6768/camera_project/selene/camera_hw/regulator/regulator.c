@@ -191,6 +191,17 @@ static enum IMGSENSOR_RETURN regulator_init(void *pinstance)
 				 j, regulator_control[i].pregulator_type);
 			preg->pregulator[j][i] =
 			    regulator_get(pdevice, str_regulator_name);
+			if (IS_ERR_OR_NULL(preg->pregulator[j][i])) {
+				const char *x6812_name = NULL;
+				if (j == 0 && i == 2) x6812_name = "vcamio";
+				else if (j == 1 && i == 1) x6812_name = "vcamd_sub";
+				else if (j == 1 && i == 2) x6812_name = "vcamio_sub";
+				else if (j == 2 && i == 0) x6812_name = "vcama_main2";
+				else if (j == 2 && i == 2) x6812_name = "vcamio_main2";
+				else if (j == 3 && i == 0) x6812_name = "vcama_sub2";
+				if (x6812_name)
+					preg->pregulator[j][i] = regulator_get(pdevice, x6812_name);
+			}
 
 			if (preg->pregulator[j][i] == NULL)
 				pr_debug("regulator[%d][%d]  %s fail!\n",
