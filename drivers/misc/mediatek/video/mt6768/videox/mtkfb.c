@@ -2729,6 +2729,10 @@ found:
 	is_videofb_parse_done = 1;
 	DISPCHECK("[DT][videolfb] islcmfound = %d\n",
 		islcmconnected);
+	if (islcmconnected && !is_lcm_inited) {
+		DISPCHECK("[DT][videolfb] forcing is_lcm_inited = 1 for LK handover\n");
+		is_lcm_inited = 1;
+	}
 	DISPCHECK("[DT][videolfb] is_lcm_inited = %d\n",
 		is_lcm_inited);
 	DISPCHECK("[DT][videolfb] fps        = %d\n",
