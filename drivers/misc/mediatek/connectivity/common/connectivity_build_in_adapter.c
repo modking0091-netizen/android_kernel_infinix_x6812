@@ -407,3 +407,27 @@ void conn_upmu_set_vcn35_on_ctrl_wifi(unsigned int val)
 }
 EXPORT_SYMBOL(conn_upmu_set_vcn35_on_ctrl_wifi);
 #endif
+
+/* Transsion tranlog stubs for stock wmt_drv.ko */
+void *alloc_msg(int type, ...)
+{
+	return NULL;
+}
+EXPORT_SYMBOL(alloc_msg);
+
+int msg_put_string(void *msg, const char *s, ...)
+{
+	return 0;
+}
+EXPORT_SYMBOL(msg_put_string);
+
+int submit_msg(void *msg)
+{
+	return 0;
+}
+EXPORT_SYMBOL(submit_msg);
+
+void free_msg(void *msg)
+{
+}
+EXPORT_SYMBOL(free_msg);
