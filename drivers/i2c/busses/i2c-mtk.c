@@ -619,6 +619,7 @@ void i2c_dump_info1(struct mt_i2c *i2c)
 
 void i2c_dump_info(struct mt_i2c *i2c)
 {
+	return;
 	/* I2CFUC(); */
 	/* int val=0; */
 	pr_info_ratelimited("%s: +++++++++++++++++++\n", __func__);
@@ -745,6 +746,7 @@ void i2c_dump_info(struct mt_i2c *i2c)
 
 void i2c_gpio_dump_info(struct mt_i2c *i2c)
 {
+	return;
 #ifndef CONFIG_MT_I2C_FPGA_ENABLE
 	if (i2c->gpiobase) {
 		dev_info(i2c->dev, "%s +++++++++++++++++++\n", __func__);
