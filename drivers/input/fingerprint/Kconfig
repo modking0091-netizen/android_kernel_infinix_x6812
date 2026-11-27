@@ -45,4 +45,8 @@ config GOODIX_SENSOR_TYPE
 	  GF3288 GF5206 GF5216 GF5208
 endif
 endif
+config TRAN_FP
+	bool "Transsion Fingerprint (tran_fp)"
+	default y
+
 endmenu
