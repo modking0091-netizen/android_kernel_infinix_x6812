@@ -174,25 +174,27 @@ static int _lcm_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
-// static int _lcm_i2c_write_bytes(unsigned char addr, unsigned char value)
-// {
-	// int ret = 0;
-	// struct i2c_client *client = _lcm_i2c_client;
-	// char write_data[2] = { 0 };
+extern long disp_dts_gpio_select_state(int s);
 
-	// if (client == NULL) {
-		// pr_debug("ERROR!! _lcm_i2c_client is null\n");
-		// return 0;
-	// }
+static int _lcm_i2c_write_bytes(unsigned char addr, unsigned char value)
+{
+	int ret = 0;
+	struct i2c_client *client = _lcm_i2c_client;
+	char write_data[2] = { 0 };
 
-	// write_data[0] = addr;
-	// write_data[1] = value;
-	// ret = i2c_master_send(client, write_data, 2);
-	// if (ret < 0)
-		// pr_info("[LCM][ERROR] _lcm_i2c write data fail !!\n");
+	if (client == NULL) {
+		pr_err("ERROR!! _lcm_i2c_client is null\n");
+		return 0;
+	}
 
-	// return ret;
-// }
+	write_data[0] = addr;
+	write_data[1] = value;
+	ret = i2c_master_send(client, write_data, 2);
+	if (ret < 0)
+		pr_info("[LCM][ERROR] _lcm_i2c write data fail !!\n");
+
+	return ret;
+}
 
 /*
  * module load/unload record keeping
@@ -712,16 +714,25 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 /* turn on gate ic & control voltage to 5.5V */
 static void lcm_init_power(void)
 {
-	display_bias_enable();
+	disp_dts_gpio_select_state(8); /* lcd_bias_enp1_gpio */
+	MDELAY(1);
+	disp_dts_gpio_select_state(13); /* lcd_bias_enn1_gpio */
+	MDELAY(1);
+	_lcm_i2c_write_bytes(0x00, 0x12);
+	MDELAY(1);
+	_lcm_i2c_write_bytes(0x01, 0x12);
+	MDELAY(1);
+	_lcm_i2c_write_bytes(0x03, 0x03);
+	MDELAY(5);
 }
 
 static void lcm_suspend_power(void)
 {
 	SET_RESET_PIN(0);
-	if (lcm_util.set_gpio_lcd_enp_bias)
-		lcm_util.set_gpio_lcd_enp_bias(0);
-	else
-		LCM_LOGI("set_gpio_lcd_enp_bias not defined...\n");
+	disp_dts_gpio_select_state(14); /* lcd_bias_enn0_gpio */
+	MDELAY(1);
+	disp_dts_gpio_select_state(7); /* lcd_bias_enp0_gpio */
+	MDELAY(1);
 }
 
 /* turn on gate ic & control voltage to 5.5V */
