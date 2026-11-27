@@ -5662,6 +5662,10 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module,
 		DSI_PHY_clk_switch(module, NULL, true);
 	}
 
+	pr_info("ddp_dsi_config: mode=%d busy=%d start=%d data_rate=%d ap_rate=%d line_cyc=%d\n",
+		dsi_config->mode, DSI_REG[0]->DSI_INTSTA.BUSY,
+		DSI_REG[0]->DSI_START.DSI_START, dsi_config->data_rate,
+		get_ap_data_rate(), get_bdg_line_cycle());
 	if (dsi_config->mode != CMD_MODE && DSI_REG[0]->DSI_INTSTA.BUSY &&
 			DSI_REG[0]->DSI_START.DSI_START) {
 		DISPCHECK("skip dsi config in vdo mode busy state\n");
