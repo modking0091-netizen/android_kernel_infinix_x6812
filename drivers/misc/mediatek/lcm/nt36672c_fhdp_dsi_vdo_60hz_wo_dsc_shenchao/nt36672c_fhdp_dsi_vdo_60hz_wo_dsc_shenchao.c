@@ -872,7 +872,7 @@ static unsigned int lcm_compare_id(void)
 }
 
 struct LCM_DRIVER nt36672c_fhdp_dsi_vdo_60hz_wo_dsc_shenchao_lcm_drv = {
-	.name = "nt36672c_fhdp_dsi_vdo_dsc_hx_sharp_x6812",
+	.name = "nt36672c_fhdp_dsi_vdo_60hz_wo_dsc_shenchao_lcm_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
