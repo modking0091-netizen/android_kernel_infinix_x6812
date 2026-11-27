@@ -1823,6 +1823,7 @@ int bdg_vm_mode_set(enum DISP_BDG_ENUM module, bool enable,
 		} else {
 			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_VM_CMD_CON0, 0);
 			DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001100);
+	pr_info("bdg_common_init: DDI_POST_CTRL=0x%x DISP_MISC1=0x%x MAINPLL=0x%x CLK_CFG=0x%x\n", mtk_spi_read((unsigned long)&DISPSYS_REG->DDI_POST_CTRL), mtk_spi_read((unsigned long)&SYS_REG->DISP_MISC1), mtk_spi_read((unsigned long)&APMIXEDSYS->MAINPLL_CON0), mtk_spi_read((unsigned long)&TOPCKGEN->CLK_CFG_0_SET));
 		}
 	}
 	return 0;
