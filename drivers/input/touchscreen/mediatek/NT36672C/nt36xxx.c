@@ -2038,8 +2038,8 @@ int tp_compare_ic(void)
 {
 	NVT_LOG("tp_compare_ic in!!");
 	if (is_ft_lcm == 0) {
-		BOOT_UPDATE_FIRMWARE_NAME = "nvt_tm_fw.bin";
-		MP_UPDATE_FIRMWARE_NAME = "nvt_tm_mp.bin";
+		BOOT_UPDATE_FIRMWARE_NAME = "novatek_ts_fw.bin";
+		MP_UPDATE_FIRMWARE_NAME = "novatek_ts_mp.bin";
 		NVT_LOG("match nt36672A_fhdp_dsi_vdo_tianma_j19_lcm_drv");
 		return 0;
 	} else if (is_ft_lcm == 1) {
