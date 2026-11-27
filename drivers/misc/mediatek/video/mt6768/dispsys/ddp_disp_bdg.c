@@ -1823,7 +1823,6 @@ int bdg_vm_mode_set(enum DISP_BDG_ENUM module, bool enable,
 		} else {
 			DSI_OUTREG32(cmdq, TX_REG[i]->DSI_VM_CMD_CON0, 0);
 			DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001100);
-	pr_info("bdg_common_init: DDI_POST_CTRL=0x%x DISP_MISC1=0x%x MAINPLL=0x%x CLK_CFG=0x%x\n", mtk_spi_read((unsigned long)&DISPSYS_REG->DDI_POST_CTRL), mtk_spi_read((unsigned long)&SYS_REG->DISP_MISC1), mtk_spi_read((unsigned long)&APMIXEDSYS->MAINPLL_CON0), mtk_spi_read((unsigned long)&TOPCKGEN->CLK_CFG_0_SET));
 		}
 	}
 	return 0;
@@ -5756,6 +5755,7 @@ int bdg_common_init(enum DISP_BDG_ENUM module,
 	DSI_OUTREG32(cmdq, SYS_REG->DISP_MISC0, 0);
 	// switch DDI(cmd mode) or IPI(vdo mode) path
 	DSI_OUTREG32(cmdq, DISPSYS_REG->DDI_POST_CTRL, 0x00001100);
+	pr_info("bdg_common_init: DDI_POST_CTRL=0x%x DISP_MISC1=0x%x MAINPLL=0x%x CLK_CFG=0x%x\n", mtk_spi_read((unsigned long)&DISPSYS_REG->DDI_POST_CTRL), mtk_spi_read((unsigned long)&SYS_REG->DISP_MISC1), mtk_spi_read((unsigned long)&APMIXEDSYS->MAINPLL_CON0), mtk_spi_read((unsigned long)&TOPCKGEN->CLK_CFG_0_SET));
 	if (tx_params->mode == CMD_MODE) {
 		DSI_OUTREGBIT(cmdq, struct GPIO_MODE1_REG, GPIO->GPIO_MODE1, RSV_24, 0x31);
 		DSI_OUTREGBIT(cmdq, struct MIPI_RX_POST_CTRL_REG,
