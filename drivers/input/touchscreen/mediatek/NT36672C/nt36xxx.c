@@ -2270,8 +2270,17 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	}
 
 	//---set int-pin & request irq---
-	client->irq = gpio_to_irq(ts->irq_gpio);
-	if (client->irq) {
+	if (gpio_is_valid(ts->irq_gpio)) {
+		client->irq = gpio_to_irq(ts->irq_gpio);
+	} else {
+		struct device_node *tpd_np = of_find_compatible_node(NULL, NULL, "mediatek,touch");
+		if (tpd_np) {
+			client->irq = irq_of_parse_and_map(tpd_np, 0);
+			of_node_put(tpd_np);
+			NVT_LOG("fallback mediatek,touch irq=%d\n", client->irq);
+		}
+	}
+	if (client->irq > 0) {
 		NVT_LOG("int_trigger_type=%d\n", ts->int_trigger_type);
 		ts->irq_enabled = true;
 		ret = request_threaded_irq(client->irq, NULL, nvt_ts_work_func,
