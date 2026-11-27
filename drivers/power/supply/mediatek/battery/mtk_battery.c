@@ -580,6 +580,8 @@ static int battery_get_property(struct power_supply *psy,
 			val->intval = gm.fixed_uisoc;
 		else
 			val->intval = data->BAT_CAPACITY;
+		if (val->intval < 0)
+			val->intval = 50;
 		/* Huaqin add for HQ-124361 by miaozhichao at 2021/5/14 start */
 		/* Huaqin add for HQ-140671 by miaozhichao at 2021/6/15 start */
 		if (val->intval  == 0){
