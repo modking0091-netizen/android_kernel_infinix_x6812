@@ -244,6 +244,7 @@ int bdg_is_bdg_connected(void)
 		spislv_init();
 		spislv_switch_speed_hz(SPI_TX_LOW_SPEED_HZ, SPI_RX_LOW_SPEED_HZ);
 		ret = mtk_spi_read(0x0);
+		pr_info("bdg_is_bdg_connected: chip_id=0x%x\n", ret);
 #endif
 
 		if (ret == 0)
@@ -302,7 +303,7 @@ void set_LDO_on(void *cmdq)
 		return;
 
 	reg1 = (mtk_spi_read((unsigned long)(&EFUSE->STATUS)) & 0x7fffff);
-	DISPMSG("mt6382, %s, EFUSE_STATUS=0x%x\n", __func__, reg1);
+	pr_info("mt6382, %s, EFUSE_STATUS=0x%x\n", __func__, reg1);
 
 	if (reg1 != 0) {
 		reg1 = (mtk_spi_read((unsigned long)(&EFUSE->TRIM1)) & 0x3f);
@@ -1164,7 +1165,7 @@ int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
 	/* hs_trail > max(8*UI, 60ns+4*UI) (spec) */
 	/* hs_trail = 80ns+4*UI */
 /*K19A K19A-138 solve mipi timing  by feiwen at 2021/5/19 start*/
-	hs_trail = 76 + 4 * ui;
+	hs_trail = 80 + 4 * ui;
 	timcon0.HS_TRAIL = (hs_trail > cycle_time) ?
 				NS_TO_CYCLE(hs_trail, cycle_time) + 1 : 2;
 /*K19A K19A-138 solve mipi timing  by feiwen at 2021/5/19 end*/
@@ -1198,7 +1199,7 @@ int bdg_tx_phy_config(enum DISP_BDG_ENUM module,
 	/* clk_trail > 60ns (spec) */
 	/* clk_trail = 100ns */
 /*K19A K19A-138 solve mipi timing  by feiwen at 2021/5/19 start*/
-	timcon2.CLK_TRAIL = NS_TO_CYCLE(80, cycle_time) + 1;
+	timcon2.CLK_TRAIL = NS_TO_CYCLE(100, cycle_time);
 	if (timcon2.CLK_TRAIL < 2)
 		timcon2.CLK_TRAIL = 2;
 /*K19A K19A-138 solve mipi timing  by feiwen at 2021/5/19 end*/
@@ -3646,7 +3647,7 @@ int bdg_tx_init(enum DISP_BDG_ENUM module,
 		return -1;
 	}
 
-	DISPMSG("%s, data_rate=%d, bdg_ssc_disable=%d, ssc_disable=%d, dsc_enable=%d, mode=%d\n",
+	pr_info("%s, data_rate=%d, bdg_ssc_disable=%d, ssc_disable=%d, dsc_enable=%d, mode=%d\n",
 		__func__, tx_data_rate, tx_params->bdg_ssc_disable,
 		tx_params->ssc_disable, dsc_en, bdg_tx_mode);
 
@@ -3947,8 +3948,8 @@ int check_stopstate(void *cmdq)
 	DISPFUNCSTART();
 	while (timeout) {
 		stop_state = mtk_spi_read((unsigned long)(&OCLA_REG->OCLA_LANE0_STOPSTATE));
-
-		DISPMSG("stop_state=0x%x, timeout=%d\n", stop_state, timeout);
+		if (timeout == 5000 || timeout == 1)
+			pr_info("check_stopstate: stop_state=0x%x, timeout=%d\n", stop_state, timeout);
 
 		if ((stop_state & 0x1) == 0x1)
 			count++;
@@ -4509,7 +4510,8 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 
 	while (timeout) {
 		phy_ready = mtk_spi_read((unsigned long)(&OCLA_REG->OCLA_PHY_READY));
-		DISPMSG("phy_ready=0x%x, timeout=%d\n", phy_ready, timeout);
+		if (timeout == 5000 || timeout == 1)
+			pr_info("mipi_dsi_rx_mac_init: phy_ready=0x%x, timeout=%d\n", phy_ready, timeout);
 
 		if ((phy_ready & 0x1) == 0x1)
 			count++;
@@ -4523,7 +4525,7 @@ int mipi_dsi_rx_mac_init(enum DISP_BDG_ENUM module,
 
 	if (timeout == 0) {
 		ret = -1;
-		DISPMSG("%s, wait timeout!\n", __func__);
+		pr_err("%s, wait timeout! last phy_ready=0x%x\n", __func__, phy_ready);
 	}
 
 	DISPFUNCEND();
