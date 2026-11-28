@@ -128,6 +128,7 @@ static int tran_fp_fb_notifier(struct notifier_block *nb,
 
 static int tran_fp_open(struct inode *inode, struct file *filp)
 {
+	pr_info("tran_fp: open called\n");
 	filp->private_data = g_fp;
 	return 0;
 }
@@ -160,6 +161,7 @@ static long tran_fp_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		return -EINVAL;
 
 	mutex_lock(&fp->lock);
+	pr_info("tran_fp: ioctl cmd=0x%x\n", cmd);
 	switch (cmd) {
 	case FPSENSOR_IOC_INIT:
 		fp->irq_flag = 0;
