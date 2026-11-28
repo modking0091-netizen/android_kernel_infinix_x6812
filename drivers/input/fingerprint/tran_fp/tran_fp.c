@@ -236,6 +236,16 @@ static const struct file_operations tran_fp_fops = {
 	.compat_ioctl = tran_fp_ioctl,
 };
 
+static struct kobject *tran_fp_kobj;
+
+static ssize_t vendor_name_show(struct kobject *kobj,
+				struct kobj_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "chipone\n");
+}
+
+static struct kobj_attribute vendor_name_attr = __ATTR_RO(vendor_name);
+
 static struct miscdevice tran_fp_misc = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name = "fpsensor",
@@ -316,6 +326,13 @@ static int tran_fp_probe(struct spi_device *spi)
 	if (ret) {
 		pr_err("tran_fp: misc_register failed: %d\n", ret);
 		return ret;
+	}
+
+	tran_fp_kobj = kobject_create_and_add("tran_fp", kernel_kobj);
+	if (tran_fp_kobj) {
+		ret = sysfs_create_file(tran_fp_kobj, &vendor_name_attr.attr);
+		if (ret)
+			pr_err("tran_fp: sysfs_create_file failed: %d\n", ret);
 	}
 
 	pr_info("tran_fp: probe success! irq=%d rst_gpio=%d irq_gpio=%d\n",
