@@ -135,12 +135,16 @@ static int lm3644_pinctrl_init(struct platform_device *pdev)
 	/* Flashlight HWEN pin initialization */
 	lm3644_hwen_high = pinctrl_lookup_state(
 			lm3644_pinctrl, LM3644_PINCTRL_STATE_HWEN_HIGH);
+	if (IS_ERR(lm3644_hwen_high))
+		lm3644_hwen_high = pinctrl_lookup_state(lm3644_pinctrl, "aw36515hwen_high");
 	if (IS_ERR(lm3644_hwen_high)) {
 		pr_err("Failed to init (%s)\n", LM3644_PINCTRL_STATE_HWEN_HIGH);
 		ret = PTR_ERR(lm3644_hwen_high);
 	}
 	lm3644_hwen_low = pinctrl_lookup_state(
 			lm3644_pinctrl, LM3644_PINCTRL_STATE_HWEN_LOW);
+	if (IS_ERR(lm3644_hwen_low))
+		lm3644_hwen_low = pinctrl_lookup_state(lm3644_pinctrl, "aw36515hwen_low");
 	if (IS_ERR(lm3644_hwen_low)) {
 		pr_err("Failed to init (%s)\n", LM3644_PINCTRL_STATE_HWEN_LOW);
 		ret = PTR_ERR(lm3644_hwen_low);
@@ -769,9 +773,11 @@ static int lm3644_i2c_probe(
 	lm3644_chip_init(chip);
 
 	/* check flashlight device */
+	lm3644_pinctrl_set(LM3644_PINCTRL_PIN_HWEN, LM3644_PINCTRL_PINSTATE_HIGH);
+	msleep(2);
 	pr_info("lm3644 LM3644_DEVICE_ID = %d\n",
 		lm3644_read_reg(lm3644_i2c_client, LM3644_DEVICE_ID));
-	if (lm3644_read_reg(lm3644_i2c_client, LM3644_DEVICE_ID) != 0x02) {
+	if (lm3644_read_reg(lm3644_i2c_client, LM3644_DEVICE_ID) < 0) {
 		pr_info("lm3644 in not available\n");
 		if (lm3644_pdata->channel_num) {
 			for (i = 0; i < lm3644_pdata->channel_num; i++)
@@ -783,6 +789,7 @@ static int lm3644_i2c_probe(
 		err = -EFAULT;
 		goto err_free;
 	}
+	lm3644_pinctrl_set(LM3644_PINCTRL_PIN_HWEN, LM3644_PINCTRL_PINSTATE_LOW);
 
 	pr_debug("i2c probe done.\n");
 
@@ -818,6 +825,7 @@ static const struct i2c_device_id lm3644_i2c_id[] = {
 #ifdef CONFIG_OF
 static const struct of_device_id lm3644_i2c_of_match[] = {
 	{.compatible = LM3644_DTNAME_I2C},
+	{.compatible = "mediatek,strobe_main"},
 	{},
 };
 #endif
@@ -939,6 +947,7 @@ static int lm3644_remove(struct platform_device *pdev)
 #ifdef CONFIG_OF
 static const struct of_device_id lm3644_of_match[] = {
 	{.compatible = LM3644_DTNAME},
+	{.compatible = "mediatek,flashlights_aw36515"},
 	{},
 };
 MODULE_DEVICE_TABLE(of, lm3644_of_match);
