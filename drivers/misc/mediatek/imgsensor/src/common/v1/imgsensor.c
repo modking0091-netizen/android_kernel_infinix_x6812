@@ -533,6 +533,10 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 			driver_name = strsep(&psensor_list_config, " \0");
 
 			while (driver_name != NULL) {
+				if (!strcmp(driver_name, "s5kjn1_ofilm_main_mipi_raw"))
+					driver_name = "s5kjn1_mipi_raw";
+				else if (!strcmp(driver_name, "gc02m1b_sunny_mipi_raw"))
+					driver_name = "gc02m1b_mipi_raw";
 				for (j = 0;
 				    j < MAX_NUM_OF_SUPPORT_SENSOR;
 				    j++) {
